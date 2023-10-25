@@ -1,0 +1,68 @@
+use std::collections::BinaryHeap;
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::cmp::Ordering;
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+struct Node {
+    vertex: usize,
+    weight: i32,
+}
+
+impl Ord for Node {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.weight.cmp(&self.weight)
+    }
+}
+
+impl PartialOrd for Node {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+fn dijkstra(graph: &HashMap<usize, Vec<(usize, i32)>>, start: usize) -> HashMap<usize, i32> {
+    let mut distances: HashMap<usize, i32> = HashMap::new();
+    let mut visited: HashSet<usize> = HashSet::new();
+    let mut priority_queue = BinaryHeap::new();
+    distances.insert(start, 0);
+    priority_queue.push(Node { vertex: start, weight: 0 });
+    while let Some(Node { vertex, weight }) = priority_queue.pop() {
+        if visited.contains(&vertex) {
+            continue;
+        }
+        visited.insert(vertex);
+        if let Some(neighbors) = graph.get(&vertex) {
+            for &(neighbor, edge_weight) in neighbors {
+                let distance_to_neighbor = weight + edge_weight;
+                if distance_to_neighbor < *distances.entry(neighbor).or_insert(i32::MAX) {
+                    distances.insert(neighbor, distance_to_neighbor);
+                    priority_queue.push(Node { vertex: neighbor, weight: distance_to_neighbor });
+                }
+            }
+        }
+    }
+    distances
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_dijkstra() {
+        let mut graph: HashMap<usize, Vec<(usize, i32)>> = HashMap::new();
+
+        graph.insert(0, vec![(1, 4), (2, 2)]);
+        graph.insert(1, vec![(2, 5), (3, 10)]);
+        graph.insert(2, vec![(3, 3)]);
+        graph.insert(3, vec![]);
+
+        let distances = dijkstra(&graph, 0);
+
+        assert_eq!(distances.get(&0), Some(&0));
+        assert_eq!(distances.get(&1), Some(&4));
+        assert_eq!(distances.get(&2), Some(&2));
+        assert_eq!(distances.get(&3), Some(&5));
+    }
+}
